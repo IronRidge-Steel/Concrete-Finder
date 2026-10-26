@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concrete Finder</title>
+<style>
+:root {
+  --bg: #f4f5f7; --card: #ffffff; --ink: #1b1f24; --muted: #5d6670; --line: #dde1e6;
+  --accent: #d9601a; --accent-ink: #ffffff; --ok: #1f7a4d; --warn: #a15c00; --warn-bg: #fff3e0;
+  --bad: #b3261e; --chip: #eef0f3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171b; --card: #1d2126; --ink: #e8eaed; --muted: #9aa3ad; --line: #2e343b;
+    --accent: #f07a33; --accent-ink: #14171b; --ok: #4cc38a; --warn: #f2b04c; --warn-bg: #33270f;
+    --bad: #f2867f; --chip: #272c32;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171b; --card: #1d2126; --ink: #e8eaed; --muted: #9aa3ad; --line: #2e343b;
+  --accent: #f07a33; --accent-ink: #14171b; --ok: #4cc38a; --warn: #f2b04c; --warn-bg: #33270f;
+  --bad: #f2867f; --chip: #272c32;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { background: var(--card); border-bottom: 1px solid var(--line); }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 8px; gap: 12px; }
+.top h1 { font-size: 18px; margin: 0; }
+.mode { font-size: 12px; color: var(--muted); }
+nav { display: flex; gap: 4px; overflow-x: auto; }
+nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px;
+  font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+nav button.on { color: var(--ink); border-bottom-color: var(--accent); }
+main { padding: 18px 0 60px; }
+section { display: none; } section.on { display: block; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.row > label { flex: 1 1 140px; }
+label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); }
+input, select, textarea { width: 100%; margin-top: 4px; padding: 9px 10px; font: inherit; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; }
+textarea { min-height: 84px; resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.btn { padding: 10px 16px; font: inherit; font-weight: 700; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: none; color: var(--ink); border-color: var(--line); }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn.danger { background: none; color: var(--bad); border-color: var(--line); }
+.hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.big-zip { font-size: 22px; letter-spacing: 2px; max-width: 180px; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 6px; }
+.checks label { display: flex; gap: 6px; align-items: center; font-weight: 500; color: var(--ink); }
+.checks input { width: auto; margin: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.card h3 { margin: 0; font-size: 17px; }
+.card .sub { color: var(--muted); font-size: 13px; }
+.card .contact { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0; font-weight: 600; }
+.card .contact a { color: var(--accent); text-decoration: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+.chip.warn { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.est { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.est div { font-size: 13px; color: var(--muted); }
+.est b { display: block; font-size: 20px; color: var(--ink); }
+.est .cust b { color: var(--ok); }
+.empty { text-align: center; padding: 26px 16px; }
+.status { min-height: 20px; font-size: 13px; margin-top: 8px; }
+.status.err { color: var(--bad); } .status.good { color: var(--ok); }
+.place { font-size: 13px; color: var(--ok); margin-top: 4px; min-height: 18px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
+th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.actions { display: flex; gap: 6px; margin-top: 8px; }
+.note { font-size: 13px; background: var(--warn-bg); color: var(--warn); border-radius: 7px; padding: 8px 10px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>IronRidge · Concrete Finder</h1>
+      <span class="mode" id="mode"></span>
+    </div>
+    <nav id="tabs">
+      <button data-tab="search" class="on">Find by ZIP</button>
+      <button data-tab="add">Add contractor</button>
+      <button data-tab="all">All contractors</button>
+      <button data-tab="gaps">Coverage gaps</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- SEARCH -->
+  <section id="search" class="on">
+    <div class="panel">
+      <div class="row">
+        <label>Customer ZIP<input id="qZip" class="big-zip" inputmode="numeric" maxlength="5" placeholder="74355"></label>
+        <label>Slab width (ft)<input id="qW" type="number" min="0" placeholder="30"></label>
+        <label>Slab length (ft)<input id="qL" type="number" min="0" placeholder="40"></label>
+        <label>Thickness<select id="qT"><option value="4">4"</option><option value="6">6"</option></select></label>
+        <button class="btn" id="goSearch">Search</button>
+      </div>
+      <div class="place" id="qPlace"></div>
+    </div>
+    <div id="results"></div>
+  </section>
+
+  <!-- ADD / EDIT -->
+  <section id="add">
+    <div class="panel">
+      <label>Quick paste — drop in your notes and hit Fill
+        <textarea id="blurb" placeholder="William (918)961-4359 - Miami, OK. Zip 74355. Travels anywhere in the 4 state area. $8 a foot, 4&quot; thickened edge, includes rebar and vapor barrier."></textarea>
+      </label>
+      <div class="actions"><button class="btn ghost" id="fill">Fill the form from this</button></div>
+    </div>
+    <form class="panel" id="form" autocomplete="off">
+      <input type="hidden" id="fId">
+      <div class="row">
+        <label>Contact name *<input id="fName" required></label>
+        <label>Company<input id="fCompany"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>Phone *<input id="fPhone" inputmode="tel" required></label>
+        <label>Email<input id="fEmail" type="email"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>Their home ZIP *<input id="fZip" inputmode="numeric" maxlength="5" required>
+          <div class="place" id="fPlace"></div></label>
+        <label>Travel radius (miles)<input id="fRadius" type="number" min="0" value="50"></label>
+      </div>
+      <label style="margin-top:10px">Also covers these whole states (optional)
+        <input id="fStates" placeholder="e.g. OK, KS, MO, AR"></label>
+      <p class="hint">Radius is the main rule. Only list states if they truly said "anywhere in…" — results matched by state alone get a "confirm the distance" flag.</p>
+
+      <div class="row" style="margin-top:14px">
+        <label>$ / sq ft at 4"<input id="fRate4" type="number" step="0.01" min="0"></label>
+        <label>$ / sq ft at 6"<input id="fRate6" type="number" step="0.01" min="0"></label>
+        <label>Minimum job $<input id="fMin" type="number" min="0"></label>
+        <label>Travel fee $<input id="fTravel" type="number" min="0"></label>
+      </div>
+      <label style="margin-top:10px">Price includes</label>
+      <div class="checks" id="fIncludes">
+        <label><input type="checkbox" value="Rebar">Rebar</label>
+        <label><input type="checkbox" value="Wire mesh">Wire mesh</label>
+        <label><input type="checkbox" value="Vapor barrier">Vapor barrier</label>
+        <label><input type="checkbox" value="Thickened edge">Thickened edge</label>
+        <label><input type="checkbox" value="Fiber mix">Fiber mix</label>
+        <label><input type="checkbox" value="Grading / site prep">Grading / site prep</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>Price given on<input id="fDate" type="date"></label>
+        <label>Status<select id="fStatus">
+          <option>New — not used yet</option><option>Used — good</option>
+          <option>Responsive</option><option>Slow to respond</option><option>Don't use</option>
+        </select></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>Facebook / website link<input id="fLink"></label>
+      </div>
+      <label style="margin-top:10px">Notes<textarea id="fNotes"></textarea></label>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" type="submit" id="save">Save contractor</button>
+        <button class="btn ghost" type="button" id="clear">Clear</button>
+      </div>
+      <div class="status" id="fStatusMsg"></div>
+    </form>
+  </section>
+
+  <!-- ALL -->
+  <section id="all">
+    <div class="panel"><input id="filter" placeholder="Filter by name, city, state…"></div>
+    <div id="list"></div>
+  </section>
+
+  <!-- GAPS -->
+  <section id="gaps">
+    <div class="panel">
+      <b>ZIPs reps searched where nobody covered.</b>
+      <p class="hint">Logged automatically on every empty search. Work this list top-down when hunting Marketplace for new contractors.</p>
+    </div>
+    <div id="gapList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings">
+    <div class="panel">
+      <div class="row">
+        <label>Your name (tags what you add)<input id="sName"></label>
+        <label>Team passcode<input id="sPass" type="password"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>Markup on concrete %<input id="sMarkup" type="number" min="0" step="1" value="0"></label>
+        <label>Price goes stale after (days)<input id="sStale" type="number" min="1" value="90"></label>
+      </div>
+      <p class="hint">Markup is 0% (pass-through) until Shane decides otherwise. Saved on this device only.</p>
+      <div class="actions"><button class="btn" id="saveSettings">Save &amp; reload data</button></div>
+      <div class="status" id="sMsg"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---- CONFIG: paste the Apps Script web-app URL here after deploying (see README.md).
+// Leave blank to run in demo mode (data saved only in this browser).
+const API_URL = "https://script.google.com/macros/s/AKfycbzeC1wLwOPyjxxSc061obL9wX-YpK0FkqexWFG9E5--5Ext-J8Grp6RyswQ6SE6zy-FZg/exec";
+
+const FOUR_STATE = ["OK", "KS", "MO", "AR"];
+const $ = (id) => document.getElementById(id);
+const mem = {}; // fallback when the browser blocks storage (private mode, previews)
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("crf_" + k); if (v != null) return JSON.parse(v); } catch (e) {} return k in mem ? mem[k] : d; },
+  set(k, v) { mem[k] = v; try { localStorage.setItem("crf_" + k, JSON.stringify(v)); } catch (e) {} }
+};
+const state = { contractors: [], misses: [], loadError: "" };
+const zipCache = {};
+
+// ---------- data layer ----------
+async function api(action, extra = {}) {
+  if (!API_URL) return demoApi(action, extra);
+  const r = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, key: store.get("pass", ""), ...extra })
+  });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "Request failed");
+  return j;
+}
+
+let memDb = null; // demo fallback when the browser blocks storage
+function demoApi(action, extra) {
+  const db = store.get("demo", null) || memDb || { contractors: [], misses: [] };
+  memDb = db;
+  if (action === "save") {
+    const c = extra.contractor;
+    if (!c.id) c.id = "c" + Date.now();
+    c.updatedAt = new Date().toISOString();
+    const i = db.contractors.findIndex((x) => x.id === c.id);
+    if (i >= 0) db.contractors[i] = c; else db.contractors.push(c);
+  } else if (action === "delete") {
+    db.contractors = db.contractors.filter((x) => x.id !== extra.id);
+  } else if (action === "miss") {
+    const m = db.misses.find((x) => x.zip === extra.zip);
+    if (m) { m.count++; m.last = new Date().toISOString(); }
+    else db.misses.push({ zip: extra.zip, place: extra.place, count: 1, last: new Date().toISOString(), by: extra.by });
+  }
+  store.set("demo", db);
+  return { ok: true, ...db };
+}
+
+async function load() {
+  try {
+    const j = await api("list");
+    state.contractors = j.contractors || [];
+    state.misses = j.misses || [];
+    state.loadError = "";
+    renderAll(); renderGaps();
+  } catch (e) {
+    state.loadError = e.message;
+    $("results").innerHTML = `<div class="card empty">Couldn't load contractors: ${esc(e.message)}.<br>Check the team passcode in Settings.</div>`;
+  }
+}
+
+async function zipInfo(zip) {
+  if (zipCache[zip]) return zipCache[zip];
+  const r = await fetch("https://api.zippopotam.us/us/" + zip);
+  if (!r.ok) throw new Error("ZIP " + zip + " not found");
+  const p = (await r.json()).places[0];
+  return (zipCache[zip] = { zip, city: p["place name"], state: p["state abbreviation"], lat: +p.latitude, lng: +p.longitude });
+}
+
+function miles(a1, o1, a2, o2) {
+  const R = 3958.8, rad = Math.PI / 180;
+  const dA = (a2 - a1) * rad, dO = (o2 - o1) * rad;
+  const h = Math.sin(dA / 2) ** 2 + Math.cos(a1 * rad) * Math.cos(a2 * rad) * Math.sin(dO / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// ---------- helpers ----------
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+const money = (n) => "$" + Math.round(n).toLocaleString();
+const listOf = (v) => (Array.isArray(v) ? v : String(v || "").split(",")).map((s) => s.trim()).filter(Boolean);
+function ageDays(d) { return d ? Math.floor((Date.now() - new Date(d).getTime()) / 864e5) : null; }
+
+// ---------- search ----------
+async function search() {
+  const zip = $("qZip").value.trim();
+  if (!/^\d{5}$/.test(zip)) { $("qPlace").textContent = "Enter a 5-digit ZIP."; return; }
+  if (state.loadError) {
+    $("results").innerHTML = `<div class="card empty">Can't search — contractor list didn't load (${esc(state.loadError)}).<br>Enter the team passcode in Settings.</div>`;
+    return;
+  }
+  $("qPlace").textContent = "Looking up…";
+  let z;
+  try { z = await zipInfo(zip); } catch (e) { $("qPlace").textContent = e.message; $("results").innerHTML = ""; return; }
+  $("qPlace").textContent = `${z.city}, ${z.state}`;
+
+  const hits = [];
+  for (const c of state.contractors) {
+    const d = c.lat != null && c.lat !== "" ? miles(+c.lat, +c.lng, z.lat, z.lng) : null;
+    const inRadius = d != null && +c.radius > 0 && d <= +c.radius;
+    const inState = listOf(c.states).map((s) => s.toUpperCase()).includes(z.state);
+    if (inRadius || inState) hits.push({ c, d, byStateOnly: !inRadius });
+  }
+  hits.sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9));
+
+  if (!hits.length) {
+    $("results").innerHTML = `<div class="card empty"><b>No one covers ${esc(z.city)}, ${esc(z.state)} (${zip}) yet.</b>
+      <p class="hint">Logged to Coverage gaps. Find a contractor on Marketplace, then add them here.</p>
+      <button class="btn small" onclick="showTab('add')">Add a contractor</button></div>`;
+    api("miss", { zip, place: `${z.city}, ${z.state}`, by: store.get("name", "") }).then(load).catch(() => {});
+    return;
+  }
+  $("results").innerHTML = `<p class="hint">${hits.length} contractor${hits.length > 1 ? "s" : ""} can reach ${esc(z.city)}, ${esc(z.state)}.</p>` +
+    hits.map((h) => card(h.c, h)).join("");
+}
+
+function estimate(c) {
+  const w = +$("qW").value, l = +$("qL").value, t = $("qT").value;
+  if (!(w > 0 && l > 0)) return "";
+  const rate = +(t === "6" ? c.rate6 : c.rate4);
+  if (!rate) return `<div class="est"><div>No ${t}" price on file — call for a quote.</div></div>`;
+  const sqft = w * l;
+  const minJob = +c.minJob || 0, travel = +c.travelFee || 0;
+  const base = sqft * rate;
+  const cost = Math.max(base, minJob) + travel;
+  const markup = +store.get("markup", 0) || 0;
+  const cust = cost * (1 + markup / 100);
+  const minNote = minJob > base ? ` · minimum job applied` : "";
+  return `<div class="est">
+    <div>${w}×${l} = ${sqft.toLocaleString()} sq ft @ $${rate}/ft${minNote}${travel ? ` + ${money(travel)} travel` : ""}</div>
+    <div>Contractor cost<b>${money(cost)}</b></div>
+    <div class="cust">Customer price${markup ? ` (+${markup}%)` : ""}<b>${money(cust)}</b></div>
+  </div>
+  <div class="note">Estimate only — final price depends on a site check (grade, access) and the building's engineered drawings. If drawings call for footings, this number goes up.</div>`;
+}
+
+function card(c, hit) {
+  const age = ageDays(c.priceDate), staleAfter = +store.get("stale", 90) || 90;
+  const chips = [];
+  if (hit && hit.d != null) chips.push(`<span class="chip">${Math.round(hit.d)} mi away</span>`);
+  if (hit && hit.byStateOnly) chips.push(`<span class="chip warn">Matched by state only — confirm they'll make the trip</span>`);
+  if (c.rate4) chips.push(`<span class="chip">4": $${c.rate4}/sq ft</span>`);
+  if (c.rate6) chips.push(`<span class="chip">6": $${c.rate6}/sq ft</span>`);
+  if (c.minJob) chips.push(`<span class="chip">Min ${money(c.minJob)}</span>`);
+  if (age != null && (c.rate4 || c.rate6)) chips.push(age > staleAfter ? `<span class="chip warn">Price is ${age} days old — verify</span>` : `<span class="chip">Price from ${esc(c.priceDate)}</span>`);
+  if (c.status) chips.push(`<span class="chip">${esc(c.status)}</span>`);
+  const inc = listOf(c.includes);
+  const cover = [c.radius ? `${c.radius} mi from ${esc(c.city || c.zip)}${c.state ? ", " + esc(c.state) : ""}` : "", listOf(c.states).length ? `states: ${esc(listOf(c.states).join(", "))}` : ""].filter(Boolean).join(" · ");
+  return `<div class="card">
+    <h3>${esc(c.company || c.name)}</h3>
+    <div class="sub">${c.company ? esc(c.name) + " · " : ""}Covers ${cover || "—"}</div>
+    <div class="contact">
+      ${c.phone ? `<a href="tel:${esc(String(c.phone).replace(/\D/g, ""))}">${esc(c.phone)}</a>` : ""}
+      ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ""}
+      ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener">Profile</a>` : ""}
+    </div>
+    <div class="chips">${chips.join("")}</div>
+    ${inc.length ? `<div class="sub">Includes: ${esc(inc.join(", "))}</div>` : ""}
+    ${c.notes ? `<div class="sub">Notes: ${esc(c.notes)}</div>` : ""}
+    ${hit ? estimate(c) : `<div class="actions">
+      <button class="btn small ghost" onclick="edit('${esc(c.id)}')">Edit</button>
+      <button class="btn small danger" onclick="del('${esc(c.id)}')">Delete</button></div>`}
+  </div>`;
+}
+
+// ---------- add / edit ----------
+function parseBlurb(t) {
+  const o = { includes: [] };
+  const ph = t.match(/\(?(\d{3})\)?[\s.-]*(\d{3})[\s.-]*(\d{4})/);
+  if (ph) o.phone = `(${ph[1]}) ${ph[2]}-${ph[3]}`;
+  const rest = ph ? t.replace(ph[0], " ") : t;
+  const zp = rest.match(/\b(\d{5})\b/); if (zp) o.zip = zp[1];
+  const em = t.match(/[\w.+-]+@[\w-]+\.[\w.]+/); if (em) o.email = em[0];
+  const ln = t.match(/https?:\/\/\S+/); if (ln) o.link = ln[0];
+  const rate = t.match(/\$\s*(\d+(?:\.\d{1,2})?)\s*(?:\/|per|a|an)?\s*(?:sq\.?\s*ft|sqft|square\s*f(?:oo|ee)t|foot|ft|sf)\b/i);
+  const thick = t.match(/\b([46])\s*(?:"|”|''|in\b|inch)/i);
+  if (rate) { if (thick && thick[1] === "6") o.rate6 = +rate[1]; else o.rate4 = +rate[1]; }
+  const mi = t.match(/(\d{2,3})\s*(?:mi\b|miles)/i); if (mi) o.radius = +mi[1];
+  if (/\b(4|four)[\s-]*state/i.test(t)) { o.states = FOUR_STATE.join(", "); if (!o.radius) o.radius = 150; }
+  const min = t.match(/min(?:imum)?[^$\d]{0,15}\$\s*([\d,]+)/i); if (min) o.minJob = +min[1].replace(/,/g, "");
+  if (/rebar/i.test(t)) o.includes.push("Rebar");
+  if (/wire\s*mesh|\bmesh\b/i.test(t)) o.includes.push("Wire mesh");
+  if (/vapou?r\s*barrier|visqueen|poly\b/i.test(t)) o.includes.push("Vapor barrier");
+  if (/thicken/i.test(t)) o.includes.push("Thickened edge");
+  if (/fiber/i.test(t)) o.includes.push("Fiber mix");
+  const name = t.split(/[(\d\-–—,.:]/)[0].trim();
+  if (name && name.length < 40) o.name = name;
+  return o;
+}
+
+function fillForm(c) {
+  $("fId").value = c.id || "";
+  $("fName").value = c.name || ""; $("fCompany").value = c.company || "";
+  $("fPhone").value = c.phone || ""; $("fEmail").value = c.email || "";
+  $("fZip").value = c.zip || ""; $("fRadius").value = c.radius ?? 50;
+  $("fStates").value = Array.isArray(c.states) ? c.states.join(", ") : (c.states || "");
+  $("fRate4").value = c.rate4 || ""; $("fRate6").value = c.rate6 || "";
+  $("fMin").value = c.minJob || ""; $("fTravel").value = c.travelFee || "";
+  $("fDate").value = c.priceDate || ((c.rate4 || c.rate6) ? new Date().toLocaleDateString("en-CA") : "");
+  if (c.status) $("fStatus").value = c.status;
+  $("fLink").value = c.link || ""; $("fNotes").value = c.notes || "";
+  const inc = listOf(c.includes);
+  document.querySelectorAll("#fIncludes input").forEach((b) => (b.checked = inc.includes(b.value)));
+  $("fPlace").textContent = c.city ? `${c.city}, ${c.state}` : "";
+  if (c.zip && !c.city) lookupFormZip();
+}
+
+async function lookupFormZip() {
+  const zip = $("fZip").value.trim();
+  if (!/^\d{5}$/.test(zip)) { $("fPlace").textContent = ""; return null; }
+  try { const z = await zipInfo(zip); $("fPlace").textContent = `✓ ${z.city}, ${z.state}`; return z; }
+  catch (e) { $("fPlace").textContent = e.message; return null; }
+}
+
+async function saveForm(ev) {
+  ev.preventDefault();
+  const msg = $("fStatusMsg");
+  msg.className = "status"; msg.textContent = "Saving…";
+  const z = await lookupFormZip();
+  if (!z) { msg.className = "status err"; msg.textContent = "Need a valid home ZIP."; return; }
+  const c = {
+    id: $("fId").value || "",
+    name: $("fName").value.trim(), company: $("fCompany").value.trim(),
+    phone: $("fPhone").value.trim(), email: $("fEmail").value.trim(),
+    zip: z.zip, city: z.city, state: z.state, lat: z.lat, lng: z.lng,
+    radius: +$("fRadius").value || 0,
+    states: listOf($("fStates").value.toUpperCase()).join(", "),
+    rate4: +$("fRate4").value || "", rate6: +$("fRate6").value || "",
+    minJob: +$("fMin").value || "", travelFee: +$("fTravel").value || "",
+    includes: [...document.querySelectorAll("#fIncludes input:checked")].map((b) => b.value).join(", "),
+    priceDate: $("fDate").value, status: $("fStatus").value,
+    link: $("fLink").value.trim(), notes: $("fNotes").value.trim(),
+    addedBy: store.get("name", "")
+  };
+  try {
+    await api("save", { contractor: c });
+    msg.className = "status good"; msg.textContent = `Saved ${c.company || c.name}.`;
+    fillForm({}); $("blurb").value = "";
+    await load();
+  } catch (e) { msg.className = "status err"; msg.textContent = e.message; }
+}
+
+function edit(id) { const c = state.contractors.find((x) => String(x.id) === id); if (c) { fillForm(c); showTab("add"); } }
+async function del(id) {
+  const c = state.contractors.find((x) => String(x.id) === id);
+  if (!c || !confirm(`Delete ${c.company || c.name}?`)) return;
+  try { await api("delete", { id }); await load(); } catch (e) { alert(e.message); }
+}
+
+// ---------- lists ----------
+function renderAll() {
+  const f = $("filter").value.toLowerCase();
+  const rows = state.contractors
+    .filter((c) => !f || [c.name, c.company, c.city, c.state, c.states, c.zip].join(" ").toLowerCase().includes(f))
+    .sort((a, b) => String(a.state).localeCompare(b.state) || String(a.city).localeCompare(b.city));
+  $("list").innerHTML = rows.length ? rows.map((c) => card(c)).join("")
+    : `<div class="card empty">${state.contractors.length ? "No matches." : "No contractors yet — add the first one."}</div>`;
+}
+
+function renderGaps() {
+  const m = [...state.misses].sort((a, b) => b.count - a.count);
+  $("gapList").innerHTML = m.length ? `<div class="panel"><table><tr><th>ZIP</th><th>Area</th><th>Searches</th><th>Last</th></tr>` +
+    m.map((x) => `<tr><td>${esc(x.zip)}</td><td>${esc(x.place)}</td><td>${esc(x.count)}</td><td>${x.last ? esc(new Date(x.last).toLocaleDateString()) : ""}</td></tr>`).join("") +
+    `</table></div>` : `<div class="card empty">No gaps logged yet.</div>`;
+}
+
+// ---------- wiring ----------
+function showTab(t) {
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+  document.querySelectorAll("section").forEach((s) => s.classList.toggle("on", s.id === t));
+}
+$("tabs").addEventListener("click", (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
+$("goSearch").addEventListener("click", search);
+$("qZip").addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
+["qW", "qL", "qT"].forEach((id) => $(id).addEventListener("change", () => { if ($("results").innerHTML) search(); }));
+$("fill").addEventListener("click", () => { const o = parseBlurb($("blurb").value); fillForm({ ...o, id: $("fId").value }); });
+$("fZip").addEventListener("blur", lookupFormZip);
+$("form").addEventListener("submit", saveForm);
+$("clear").addEventListener("click", () => { fillForm({}); $("fStatusMsg").textContent = ""; });
+$("filter").addEventListener("input", renderAll);
+$("saveSettings").addEventListener("click", () => {
+  store.set("name", $("sName").value.trim()); store.set("pass", $("sPass").value);
+  store.set("markup", +$("sMarkup").value || 0); store.set("stale", +$("sStale").value || 90);
+  $("sMsg").className = "status good"; $("sMsg").textContent = "Saved."; load();
+});
+
+$("sName").value = store.get("name", ""); $("sPass").value = store.get("pass", "");
+$("sMarkup").value = store.get("markup", 0); $("sStale").value = store.get("stale", 90);
+$("mode").textContent = API_URL ? "Live · shared team data" : "Demo mode · data stays in this browser";
+if (API_URL && !store.get("pass", "")) showTab("settings");
+load();
+</script>
+</body>
+</html>
